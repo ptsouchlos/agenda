@@ -168,5 +168,5 @@ The project is licensed under the MIT license. See [LICENSE](LICENSE) for more d
 
 ## Author
 
-| [<img src="https://avatars0.githubusercontent.com/u/6591180?s=460&v=4" width="100"><br><sub>@DeveloperPaul123</sub>](https://github.com/DeveloperPaul123) |
+| [<img src="https://avatars0.githubusercontent.com/u/6591180?s=460&v=4" width="100"><br><sub>@ptsouchlos</sub>](https://github.com/ptsouchlos) |
 | :-------------------------------------------------------------------------------------------------------------------------------------------------------: |
