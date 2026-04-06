@@ -1,4 +1,5 @@
 mod config;
+mod formatter;
 mod models;
 mod providers;
 
