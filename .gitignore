@@ -1,4 +1,5 @@
-*.exe
-*.json
-./agenda
-*
+# Rust build output
+/target/
+
+# OS files
+.DS_Store
