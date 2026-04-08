@@ -100,11 +100,9 @@ fn run() -> Result<()> {
     let provider = create_provider(&cfg.provider, &cfg)?;
 
     // Spinner on main thread; API calls on background thread
+    let style = ProgressStyle::default_spinner().tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏");
     let spinner = ProgressBar::new_spinner();
-    spinner.set_style(
-        ProgressStyle::default_spinner()
-            .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
-    );
+    spinner.set_style(style);
     spinner.set_message("Fetching events...");
     spinner.enable_steady_tick(Duration::from_millis(100));
 
