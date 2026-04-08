@@ -70,8 +70,8 @@ impl EventFormatter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
     use chrono::Local;
+    use chrono::TimeZone;
 
     fn make_event(title: &str, start_h: u32, end_h: u32) -> CalendarEvent {
         let start = Local.with_ymd_and_hms(2026, 4, 6, start_h, 0, 0).unwrap();
@@ -101,9 +101,11 @@ mod tests {
 
     #[test]
     fn formats_event_with_duration_template() {
-        let formatter =
-            EventFormatter::new("%H:%M", "- {{StartTimeFormatted}} ({{Duration}}): {{Title}}")
-                .unwrap();
+        let formatter = EventFormatter::new(
+            "%H:%M",
+            "- {{StartTimeFormatted}} ({{Duration}}): {{Title}}",
+        )
+        .unwrap();
         let event = make_event("Meeting", 14, 15);
         let result = formatter.format_event(&event).unwrap();
         assert_eq!(result, "- 14:00 (1h0m): Meeting");

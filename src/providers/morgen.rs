@@ -4,9 +4,9 @@ use iso8601_duration::Duration as IsoDuration;
 use serde::Deserialize;
 use std::collections::HashMap;
 
+use super::CalendarProvider;
 use crate::config::ProviderConfig;
 use crate::models::CalendarEvent;
-use super::CalendarProvider;
 
 pub struct MorgenProvider {
     config: ProviderConfig,
@@ -63,11 +63,12 @@ struct MorgenEventsResponse {
 
 impl MorgenProvider {
     pub fn new(config: ProviderConfig) -> Result<Self> {
-        let api_key = std::env::var(&config.env_api_key)
-            .map_err(|_| anyhow::anyhow!(
+        let api_key = std::env::var(&config.env_api_key).map_err(|_| {
+            anyhow::anyhow!(
                 "API key not set. Please set the {} environment variable.",
                 config.env_api_key
-            ))?;
+            )
+        })?;
         Ok(MorgenProvider { config, api_key })
     }
 
@@ -98,18 +99,13 @@ impl MorgenProvider {
 }
 
 impl CalendarProvider for MorgenProvider {
-    fn name(&self) -> &str {
-        "morgen"
-    }
-
     fn get_events(&self, date: NaiveDate) -> Result<Vec<CalendarEvent>> {
         let calendars = self.get_calendars()?;
 
         // Group readable, non-ignored calendar IDs by account
         let mut account_calendar_map: HashMap<String, Vec<String>> = HashMap::new();
         for cal in &calendars {
-            if cal.my_rights.may_read_items
-                && !self.config.calendars_to_ignore.contains(&cal.name)
+            if cal.my_rights.may_read_items && !self.config.calendars_to_ignore.contains(&cal.name)
             {
                 account_calendar_map
                     .entry(cal.account_id.clone())

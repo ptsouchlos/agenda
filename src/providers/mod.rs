@@ -9,7 +9,6 @@ mod morgen;
 pub use morgen::MorgenProvider;
 
 pub trait CalendarProvider: Send {
-    fn name(&self) -> &str;
     fn get_events(&self, date: NaiveDate) -> Result<Vec<CalendarEvent>>;
 }
 

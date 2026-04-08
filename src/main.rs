@@ -24,7 +24,10 @@ struct Cli {
     #[arg(long, help = "Override the provider from config")]
     provider: Option<String>,
 
-    #[arg(long, help = "Override the time format from config (strftime, e.g. %H:%M)")]
+    #[arg(
+        long,
+        help = "Override the time format from config (strftime, e.g. %H:%M)"
+    )]
     time_format: Option<String>,
 
     #[arg(long, help = "Override the event template from config")]
@@ -115,14 +118,11 @@ fn run() -> Result<()> {
         return Ok(());
     }
 
-    // Deduplicate by title + start_time
+    // Deduplicate by event ID
     let mut seen: HashMap<String, ()> = HashMap::new();
     let mut unique_events: Vec<_> = events
         .into_iter()
-        .filter(|e| {
-            let key = format!("{}-{}", e.title, e.start_time.to_rfc3339());
-            seen.insert(key, ()).is_none()
-        })
+        .filter(|e| seen.insert(e.id.clone(), ()).is_none())
         .collect();
 
     // Sort by start time
