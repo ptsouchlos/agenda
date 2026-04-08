@@ -6,7 +6,7 @@ A command-line tool that pulls calendar events from various calendar providers a
 
 I currently use [Obsidian](https://obsidian.md) to take notes. Obsidian uses markdown files, and part of the notes I take include a section for my meetings each day. In a [blog post](https://jnsgr.uk/2024/07/how-i-computer-in-2024/) by Jon Seager, he mentions:
 
-> The agenda and the links are automatically generated using a small Go application I wrote...
+> The agenda and the links are automatically generated using a small Go application I wrote - this application scrapes my Google Calendar, and according to some rules and the knowledge it has of my vault, generates the Markdown for the agenda and copies it to the clipboard. Each day, I sit down and type agenda at the command line, then paste into Obsidian.
 
 I really liked this idea, so I decided to create my own version of this tool, written in Rust.
 
