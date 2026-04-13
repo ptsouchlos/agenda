@@ -5,8 +5,8 @@ default:
 
 [group('dev')]
 [doc('Build the project')]
-build:
-    cargo build --release
+build config="debug":
+    cargo build {{ if config == "release" { "--release" } else { "" } }}
 
 [group('dev')]
 [doc('Install the project')]
@@ -25,5 +25,5 @@ lint:
 
 [group('dev')]
 [doc('Run tests')]
-test:
-    cargo test
+test config="debug":
+    cargo test {{ if config == "release" { "--release" } else { "" } }}
