@@ -30,6 +30,7 @@ struct TemplateData {
 impl EventFormatter {
     pub fn new(time_format: &str, event_template: &str) -> Result<Self> {
         let mut handlebars = Handlebars::new();
+        handlebars.register_escape_fn(handlebars::no_escape);
         handlebars
             .register_template_string("event", event_template)
             .context("failed to compile event template")?;

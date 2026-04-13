@@ -8,6 +8,16 @@ use super::CalendarProvider;
 use crate::config::ProviderConfig;
 use crate::models::CalendarEvent;
 
+fn decode_html_entities(s: &str) -> String {
+    s.replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&apos;", "'")
+        .replace("&nbsp;", " ")
+}
+
 pub struct MorgenProvider {
     config: ProviderConfig,
     api_key: String,
@@ -128,7 +138,10 @@ impl CalendarProvider for MorgenProvider {
         let mut raw_events: Vec<MorgenEvent> = Vec::new();
 
         for (account_id, calendar_ids) in &account_calendar_map {
-            let calendar_ids_str = calendar_ids.join(",");
+            let mut unique_ids = calendar_ids.clone();
+            unique_ids.sort();
+            unique_ids.dedup();
+            let calendar_ids_str = unique_ids.join(",");
             let response = self
                 .build_request(&url)
                 .query("start", &start_str)
@@ -171,11 +184,11 @@ impl CalendarProvider for MorgenProvider {
 
             events.push(CalendarEvent {
                 id: me.id,
-                title: me.title,
+                title: decode_html_entities(&me.title),
                 start_time,
                 end_time,
-                description: me.description,
-                location: me.location,
+                description: me.description.as_deref().map(decode_html_entities),
+                location: me.location.as_deref().map(decode_html_entities),
                 attendees: Vec::new(),
             });
         }

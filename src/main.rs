@@ -109,6 +109,15 @@ fn run() -> Result<()> {
     let handle = std::thread::spawn(move || provider.get_events(date));
     let events = handle.join().expect("provider thread panicked")?;
 
+    for event in &events {
+        if cli.verbose {
+            eprintln!(
+                "Fetched event: ({}) {} ({} - {})",
+                event.id, event.title, event.start_time, event.end_time,
+            );
+        }
+    }
+
     spinner.finish_and_clear();
 
     if events.is_empty() {
