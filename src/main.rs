@@ -3,6 +3,9 @@ mod formatter;
 mod models;
 mod providers;
 
+use shadow_rs::shadow;
+shadow!(build);
+
 use anyhow::{Context, Result};
 use chrono::{Local, NaiveDate};
 use clap::{Parser, Subcommand};
@@ -54,6 +57,8 @@ struct Cli {
 enum Commands {
     #[command(about = "Initialize default configuration")]
     Init,
+    #[command(about = "Print version and build information")]
+    Version,
 }
 
 fn parse_date(s: &str) -> Result<NaiveDate, String> {
@@ -64,16 +69,28 @@ fn parse_date(s: &str) -> Result<NaiveDate, String> {
 fn run() -> Result<()> {
     let cli = Cli::parse();
 
-    if let Some(Commands::Init) = &cli.command {
-        let cfg = default_config();
-        let path = default_config_path();
-        write_config(&cfg, &path)?;
-        println!("Created default configuration at: {}", path.display());
-        println!(
-            "Please set your API key in the {} environment variable.",
-            cfg.providers[&cfg.provider].env_api_key
-        );
-        return Ok(());
+    match &cli.command {
+        Some(Commands::Init) => {
+            let cfg = default_config();
+            let path = default_config_path();
+            write_config(&cfg, &path)?;
+            println!("Created default configuration at: {}", path.display());
+            println!(
+                "Please set your API key in the {} environment variable.",
+                cfg.providers[&cfg.provider].env_api_key
+            );
+            return Ok(());
+        }
+        Some(Commands::Version) => {
+            println!("agenda {}", build::PKG_VERSION);
+            println!("commit:     {}", build::COMMIT_HASH);
+            println!("branch:     {}", build::BRANCH);
+            println!("build time: {}", build::BUILD_TIME);
+            println!("rust:       {}", build::RUST_VERSION);
+            println!("profile:    {}", build::BUILD_RUST_CHANNEL);
+            return Ok(());
+        }
+        None => {}
     }
 
     let config_path = cli.config.unwrap_or_else(default_config_path);
