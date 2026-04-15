@@ -1,7 +1,12 @@
 [package]
 name = "agenda"
+description = "A command-line tool to see the days events."
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+homepage = "https://github.com/ptsouchlos/agenda"
+repository = "https://github.com/ptsouchlos/agenda"
+license = "MIT"
+topics = ["calendar", "events", "cli", "productivity"]
 
 [[bin]]
 name = "agenda"
@@ -16,7 +21,7 @@ clap = { version = "4", features = ["derive"] }
 ureq = { version = "2", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml = "1.1.2+spec-1.1.0"
+toml = "1.1.2"
 handlebars = "6"
 indicatif = "0.18"
 anyhow = "1"
