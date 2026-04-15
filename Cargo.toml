@@ -7,7 +7,11 @@ edition = "2021"
 name = "agenda"
 path = "src/main.rs"
 
+[build-dependencies]
+shadow-rs = "1.7.1"
+
 [dependencies]
+shadow-rs = "1.7.1"
 clap = { version = "4", features = ["derive"] }
 ureq = { version = "2", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
