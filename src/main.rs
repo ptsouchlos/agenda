@@ -36,6 +36,9 @@ struct Cli {
     #[arg(long, short, help = "Enable verbose logging")]
     verbose: bool,
 
+    #[arg(long, help = "Bypass the calendar cache and force a fresh fetch")]
+    force_refresh: bool,
+
     #[arg(
         long,
         help = "Date to fetch events for (YYYY-MM-DD, default: today)",
@@ -106,7 +109,8 @@ fn run() -> Result<()> {
     spinner.set_message("Fetching events...");
     spinner.enable_steady_tick(Duration::from_millis(100));
 
-    let handle = std::thread::spawn(move || provider.get_events(date));
+    let force_refresh = cli.force_refresh;
+    let handle = std::thread::spawn(move || provider.get_events(date, force_refresh));
     let events = handle.join().expect("provider thread panicked")?;
 
     for event in &events {

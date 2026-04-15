@@ -1,8 +1,10 @@
 use anyhow::{Context, Result};
-use chrono::{Duration, Local, NaiveDate, TimeZone};
+use chrono::{DateTime, Duration, Local, NaiveDate, TimeZone, Utc};
 use iso8601_duration::Duration as IsoDuration;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 
 use super::CalendarProvider;
 use crate::config::ProviderConfig;
@@ -23,13 +25,13 @@ pub struct MorgenProvider {
     api_key: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct MorgenCalendarRights {
     #[serde(rename = "mayReadItems")]
     may_read_items: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct MorgenCalendar {
     id: String,
     name: String,
@@ -56,7 +58,7 @@ struct MorgenEvent {
     start: String,
     duration: String,
     #[serde(rename = "timeZone")]
-    time_zone: String,
+    time_zone: Option<String>,
     description: Option<String>,
     location: Option<String>,
 }
@@ -69,6 +71,19 @@ struct MorgenEventsResponseData {
 #[derive(Deserialize)]
 struct MorgenEventsResponse {
     data: MorgenEventsResponseData,
+}
+
+#[derive(Serialize, Deserialize)]
+struct CalendarCache {
+    cached_at: DateTime<Utc>,
+    calendars: Vec<MorgenCalendar>,
+}
+
+fn cache_path() -> PathBuf {
+    dirs::cache_dir()
+        .expect("could not determine cache directory")
+        .join("agenda")
+        .join("morgen_calendars.json")
 }
 
 impl MorgenProvider {
@@ -95,7 +110,7 @@ impl MorgenProvider {
         req
     }
 
-    fn get_calendars(&self) -> Result<Vec<MorgenCalendar>> {
+    fn fetch_calendars(&self) -> Result<Vec<MorgenCalendar>> {
         let url = format!("{}/calendars/list", self.config.base_url);
         let response = self
             .build_request(&url)
@@ -106,16 +121,67 @@ impl MorgenProvider {
             .context("failed to deserialize calendars response")?;
         Ok(data.data.calendars)
     }
+
+    fn load_cache() -> Option<CalendarCache> {
+        let path = cache_path();
+        let contents = fs::read_to_string(&path).ok()?;
+        serde_json::from_str(&contents).ok()
+    }
+
+    fn save_cache(calendars: &[MorgenCalendar]) -> Result<()> {
+        let path = cache_path();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).context("failed to create cache directory")?;
+        }
+        let cache = CalendarCache {
+            cached_at: Utc::now(),
+            calendars: calendars
+                .iter()
+                .map(|c| MorgenCalendar {
+                    id: c.id.clone(),
+                    name: c.name.clone(),
+                    account_id: c.account_id.clone(),
+                    my_rights: MorgenCalendarRights {
+                        may_read_items: c.my_rights.may_read_items,
+                    },
+                })
+                .collect(),
+        };
+        let json = serde_json::to_string_pretty(&cache).context("failed to serialize cache")?;
+        fs::write(&path, json).context("failed to write calendar cache")?;
+        Ok(())
+    }
+
+    fn get_calendars_cached(&self, force_refresh: bool) -> Result<Vec<MorgenCalendar>> {
+        let ttl = Duration::seconds(self.config.calendar_cache_ttl_seconds as i64);
+
+        if !force_refresh {
+            if let Some(cache) = Self::load_cache() {
+                let age = Utc::now().signed_duration_since(cache.cached_at);
+                if age < ttl {
+                    return Ok(cache.calendars);
+                }
+            }
+        }
+
+        let calendars = self.fetch_calendars()?;
+        if let Err(e) = Self::save_cache(&calendars) {
+            eprintln!("Warning: failed to write calendar cache: {:#}", e);
+        }
+        Ok(calendars)
+    }
 }
 
 impl CalendarProvider for MorgenProvider {
-    fn get_events(&self, date: NaiveDate) -> Result<Vec<CalendarEvent>> {
-        let calendars = self.get_calendars()?;
+    fn get_events(&self, date: NaiveDate, force_refresh: bool) -> Result<Vec<CalendarEvent>> {
+        let calendars = self.get_calendars_cached(force_refresh)?;
 
         // Group readable, non-ignored calendar IDs by account
         let mut account_calendar_map: HashMap<String, Vec<String>> = HashMap::new();
         for cal in &calendars {
-            if cal.my_rights.may_read_items && !self.config.calendars_to_ignore.contains(&cal.name)
+            if cal.my_rights.may_read_items
+                && !(self.config.calendars_to_ignore.contains(&cal.name)
+                    || self.config.calendars_to_ignore.contains(&cal.id))
             {
                 account_calendar_map
                     .entry(cal.account_id.clone())
@@ -160,8 +226,15 @@ impl CalendarProvider for MorgenProvider {
         for me in raw_events {
             let tz: chrono_tz::Tz = me
                 .time_zone
+                .as_deref()
+                .unwrap_or("UTC")
                 .parse()
-                .with_context(|| format!("unknown timezone: {}", me.time_zone))?;
+                .with_context(|| {
+                    format!(
+                        "unknown timezone: {}",
+                        me.time_zone.as_deref().unwrap_or("UTC")
+                    )
+                })?;
 
             let naive = chrono::NaiveDateTime::parse_from_str(&me.start, "%Y-%m-%dT%H:%M:%S")
                 .with_context(|| format!("failed to parse start time: {}", me.start))?;

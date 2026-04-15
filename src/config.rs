@@ -17,12 +17,18 @@ pub struct Config {
     pub providers: HashMap<String, ProviderConfig>,
 }
 
+fn default_cache_ttl_seconds() -> u64 {
+    86400
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ProviderConfig {
     pub base_url: String,
     pub headers: HashMap<String, String>,
     pub env_api_key: String,
     pub calendars_to_ignore: Vec<String>,
+    #[serde(default = "default_cache_ttl_seconds")]
+    pub calendar_cache_ttl_seconds: u64,
 }
 
 pub fn default_config() -> Config {
@@ -38,6 +44,7 @@ pub fn default_config() -> Config {
             headers,
             env_api_key: "MORGEN_API_KEY".to_string(),
             calendars_to_ignore: vec!["ignore_this_calendar".to_string()],
+            calendar_cache_ttl_seconds: default_cache_ttl_seconds(),
         },
     );
 

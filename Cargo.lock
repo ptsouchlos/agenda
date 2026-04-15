@@ -21,6 +21,7 @@ dependencies = [
  "indicatif",
  "iso8601-duration",
  "serde",
+ "serde_json",
  "toml",
  "ureq",
 ]
@@ -151,6 +152,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-link",
 ]
