@@ -1,7 +1,12 @@
 [package]
 name = "agenda"
+description = "A command-line tool to see the days events."
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+homepage = "https://github.com/ptsouchlos/agenda"
+repository = "https://github.com/ptsouchlos/agenda"
+license = "MIT"
+topics = ["calendar", "events", "cli", "productivity"]
 
 [[bin]]
 name = "agenda"
