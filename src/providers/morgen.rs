@@ -155,14 +155,13 @@ impl MorgenProvider {
     fn get_calendars_cached(&self, force_refresh: bool) -> Result<Vec<MorgenCalendar>> {
         let ttl = Duration::seconds(self.config.calendar_cache_ttl_seconds as i64);
 
-        if !force_refresh {
-            if let Some(cache) = Self::load_cache() {
+        if !force_refresh
+            && let Some(cache) = Self::load_cache() {
                 let age = Utc::now().signed_duration_since(cache.cached_at);
                 if age < ttl {
                     return Ok(cache.calendars);
                 }
             }
-        }
 
         let calendars = self.fetch_calendars()?;
         if let Err(e) = Self::save_cache(&calendars) {
