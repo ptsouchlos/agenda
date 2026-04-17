@@ -1,0 +1,9 @@
+[book]
+title = "Agenda CLI"
+authors = ["Paul Tsouchlos"]
+language = "en"
+src = "src"
+
+[output.html]
+git-repository-url = "https://github.com/ptsouchlos/agenda"
+edit-url-template = "https://github.com/ptsouchlos/agenda/edit/main/docs/{path}"
