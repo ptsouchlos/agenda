@@ -89,9 +89,7 @@ fn cache_path() -> PathBuf {
 impl MorgenProvider {
     pub fn new(config: ProviderConfig) -> Result<Self> {
         let env_var_name = config.env_api_key.as_deref().ok_or_else(|| {
-            anyhow::anyhow!(
-                "morgen provider requires `env_api_key` to be set in the config"
-            )
+            anyhow::anyhow!("morgen provider requires `env_api_key` to be set in the config")
         })?;
         let api_key = std::env::var(env_var_name).map_err(|_| {
             anyhow::anyhow!(

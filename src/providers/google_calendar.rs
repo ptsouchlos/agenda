@@ -2,8 +2,8 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use oauth2::basic::BasicClient;
 use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge,
-    RedirectUrl, RefreshToken, Scope, TokenResponse, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl,
+    RefreshToken, Scope, TokenResponse, TokenUrl,
 };
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
@@ -181,9 +181,7 @@ fn resolve_token_filename(config: &ProviderConfig) -> String {
 impl GoogleCalendarProvider {
     pub fn new(config: ProviderConfig) -> Result<Self> {
         let client_id_var = config.env_oauth_client_id.as_deref().ok_or_else(|| {
-            anyhow::anyhow!(
-                "google_calendar provider requires `env_oauth_client_id` in the config"
-            )
+            anyhow::anyhow!("google_calendar provider requires `env_oauth_client_id` in the config")
         })?;
         let client_secret_var = config.env_oauth_client_secret.as_deref().ok_or_else(|| {
             anyhow::anyhow!(
@@ -240,15 +238,13 @@ impl GoogleCalendarProvider {
             .map(|d| d.as_secs() as i64)
             .unwrap_or(3600);
         let expires_at = Utc::now() + chrono::Duration::seconds(expires_in);
-        let scope = token_response
-            .scopes()
-            .map(|scopes| {
-                scopes
-                    .iter()
-                    .map(|s| s.as_str())
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            });
+        let scope = token_response.scopes().map(|scopes| {
+            scopes
+                .iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .join(" ")
+        });
 
         let new_tokens = StoredTokens {
             access_token: new_access.clone(),
@@ -289,10 +285,7 @@ impl GoogleCalendarProvider {
         Ok(out)
     }
 
-    fn get_calendars_cached(
-        &self,
-        force_refresh: bool,
-    ) -> Result<Vec<GoogleCalendarListEntry>> {
+    fn get_calendars_cached(&self, force_refresh: bool) -> Result<Vec<GoogleCalendarListEntry>> {
         let ttl = chrono::Duration::seconds(self.config.calendar_cache_ttl_seconds as i64);
         let path = calendar_cache_path();
 
@@ -346,9 +339,9 @@ impl GoogleCalendarProvider {
             if let Some(tok) = &page_token {
                 req = req.query("pageToken", tok);
             }
-            let resp = req.call().with_context(|| {
-                format!("failed to fetch events for calendar {}", calendar_id)
-            })?;
+            let resp = req
+                .call()
+                .with_context(|| format!("failed to fetch events for calendar {}", calendar_id))?;
             let data: GoogleEventsResponse = resp
                 .into_json()
                 .context("failed to deserialize events response")?;
@@ -412,9 +405,9 @@ fn convert_event(ge: GoogleEvent) -> Option<CalendarEvent> {
         return None;
     }
     if let Some(attendees) = &ge.attendees
-        && attendees.iter().any(|a| {
-            a.is_self.unwrap_or(false) && a.response_status.as_deref() == Some("declined")
-        })
+        && attendees
+            .iter()
+            .any(|a| a.is_self.unwrap_or(false) && a.response_status.as_deref() == Some("declined"))
     {
         return None;
     }
@@ -437,8 +430,12 @@ fn convert_event(ge: GoogleEvent) -> Option<CalendarEvent> {
         (start_dt, end_dt)
     } else if let (Some(sdt), Some(edt)) = (&start.date_time, &end.date_time) {
         // Timed event — RFC3339 with offset.
-        let s = DateTime::parse_from_rfc3339(sdt).ok()?.with_timezone(&Local);
-        let e = DateTime::parse_from_rfc3339(edt).ok()?.with_timezone(&Local);
+        let s = DateTime::parse_from_rfc3339(sdt)
+            .ok()?
+            .with_timezone(&Local);
+        let e = DateTime::parse_from_rfc3339(edt)
+            .ok()?
+            .with_timezone(&Local);
         (s, e)
     } else {
         return None;
@@ -490,21 +487,21 @@ fn build_oauth_client(
     client_id: &str,
     client_secret: &str,
     redirect_url: Option<String>,
-) -> Result<BasicClient<
-    oauth2::EndpointSet,  // HasAuthUrl
-    oauth2::EndpointNotSet, // HasDeviceAuthUrl
-    oauth2::EndpointNotSet, // HasIntrospectionUrl
-    oauth2::EndpointNotSet, // HasRevocationUrl
-    oauth2::EndpointSet,    // HasTokenUrl
->> {
+) -> Result<
+    BasicClient<
+        oauth2::EndpointSet,    // HasAuthUrl
+        oauth2::EndpointNotSet, // HasDeviceAuthUrl
+        oauth2::EndpointNotSet, // HasIntrospectionUrl
+        oauth2::EndpointNotSet, // HasRevocationUrl
+        oauth2::EndpointSet,    // HasTokenUrl
+    >,
+> {
     let mut client = BasicClient::new(ClientId::new(client_id.to_string()))
         .set_client_secret(ClientSecret::new(client_secret.to_string()))
         .set_auth_uri(AuthUrl::new(GOOGLE_AUTH_URL.to_string()).context("invalid auth URL")?)
         .set_token_uri(TokenUrl::new(GOOGLE_TOKEN_URL.to_string()).context("invalid token URL")?);
     if let Some(url) = redirect_url {
-        client = client.set_redirect_uri(
-            RedirectUrl::new(url).context("invalid redirect URL")?,
-        );
+        client = client.set_redirect_uri(RedirectUrl::new(url).context("invalid redirect URL")?);
     }
     Ok(client)
 }
@@ -514,9 +511,7 @@ pub fn authenticate(config: &ProviderConfig) -> Result<()> {
         anyhow::anyhow!("google_calendar provider requires `env_oauth_client_id` in the config")
     })?;
     let client_secret_var = config.env_oauth_client_secret.as_deref().ok_or_else(|| {
-        anyhow::anyhow!(
-            "google_calendar provider requires `env_oauth_client_secret` in the config"
-        )
+        anyhow::anyhow!("google_calendar provider requires `env_oauth_client_secret` in the config")
     })?;
     let client_id = read_env_var(client_id_var, "OAuth client ID")?;
     let client_secret = read_env_var(client_secret_var, "OAuth client secret")?;
@@ -542,7 +537,10 @@ pub fn authenticate(config: &ProviderConfig) -> Result<()> {
 
     println!("Opening browser to authorize agenda with Google Calendar...");
     if let Err(e) = webbrowser::open(auth_url.as_str()) {
-        eprintln!("Could not auto-open browser ({}). Open this URL manually:", e);
+        eprintln!(
+            "Could not auto-open browser ({}). Open this URL manually:",
+            e
+        );
         eprintln!("{}", auth_url);
     }
 
@@ -619,14 +617,19 @@ pub fn authenticate(config: &ProviderConfig) -> Result<()> {
     };
     let path = token_cache_path(&resolve_token_filename(config));
     save_tokens(&path, &tokens)?;
-    println!("Authentication successful. Tokens stored at {}", path.display());
+    println!(
+        "Authentication successful. Tokens stored at {}",
+        path.display()
+    );
     Ok(())
 }
 
 fn parse_redirect_query(request_line: &str) -> Result<(String, String)> {
     // Example: "GET /?code=abc&state=xyz HTTP/1.1"
     let mut parts = request_line.split_whitespace();
-    let _method = parts.next().ok_or_else(|| anyhow::anyhow!("empty request line"))?;
+    let _method = parts
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("empty request line"))?;
     let path = parts
         .next()
         .ok_or_else(|| anyhow::anyhow!("missing request path in callback"))?;
@@ -681,10 +684,7 @@ mod tests {
         assert_eq!(ev.description.as_deref(), Some("Daily sync"));
         assert_eq!(ev.location.as_deref(), Some("Room 3"));
         // 30-minute event regardless of local TZ
-        assert_eq!(
-            (ev.end_time - ev.start_time).num_minutes(),
-            30
-        );
+        assert_eq!((ev.end_time - ev.start_time).num_minutes(), 30);
         assert_eq!(ev.attendees.len(), 2);
     }
 

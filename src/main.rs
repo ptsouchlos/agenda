@@ -103,13 +103,13 @@ fn run() -> Result<()> {
         }
         Some(Commands::Auth { provider }) => {
             let config_path = cli.config.clone().unwrap_or_else(default_config_path);
-            let cfg = read_config(&config_path).with_context(|| {
-                format!("failed to load config from {}", config_path.display())
-            })?;
+            let cfg = read_config(&config_path)
+                .with_context(|| format!("failed to load config from {}", config_path.display()))?;
             let name = provider.clone().unwrap_or_else(|| cfg.provider.clone());
-            let provider_config = cfg.providers.get(&name).ok_or_else(|| {
-                anyhow::anyhow!("provider '{}' not found in configuration", name)
-            })?;
+            let provider_config = cfg
+                .providers
+                .get(&name)
+                .ok_or_else(|| anyhow::anyhow!("provider '{}' not found in configuration", name))?;
             match name.as_str() {
                 "google_calendar" => {
                     providers::google_calendar::authenticate(provider_config)?;
