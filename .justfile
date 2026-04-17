@@ -16,7 +16,7 @@ install:
 [group('dev')]
 [doc('Format the code')]
 fmt:
-    cargo fmt
+    cargo fmt --all
 
 [group('dev')]
 [doc('Lint the code')]
