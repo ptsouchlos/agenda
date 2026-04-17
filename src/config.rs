@@ -24,11 +24,23 @@ fn default_cache_ttl_seconds() -> u64 {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ProviderConfig {
     pub base_url: String,
+    #[serde(default)]
     pub headers: HashMap<String, String>,
-    pub env_api_key: String,
+    #[serde(default)]
+    pub env_api_key: Option<String>,
     pub calendars_to_ignore: Vec<String>,
     #[serde(default = "default_cache_ttl_seconds")]
     pub calendar_cache_ttl_seconds: u64,
+
+    // OAuth-related (used by google_calendar; ignored by morgen)
+    #[serde(default)]
+    pub env_oauth_client_id: Option<String>,
+    #[serde(default)]
+    pub env_oauth_client_secret: Option<String>,
+    #[serde(default)]
+    pub oauth_redirect_port: u16,
+    #[serde(default)]
+    pub token_cache_filename: Option<String>,
 }
 
 pub fn default_config() -> Config {
@@ -42,9 +54,27 @@ pub fn default_config() -> Config {
         ProviderConfig {
             base_url: "https://api.morgen.so/v3".to_string(),
             headers,
-            env_api_key: "MORGEN_API_KEY".to_string(),
+            env_api_key: Some("MORGEN_API_KEY".to_string()),
             calendars_to_ignore: vec!["ignore_this_calendar".to_string()],
             calendar_cache_ttl_seconds: default_cache_ttl_seconds(),
+            env_oauth_client_id: None,
+            env_oauth_client_secret: None,
+            oauth_redirect_port: 0,
+            token_cache_filename: None,
+        },
+    );
+    providers.insert(
+        "google_calendar".to_string(),
+        ProviderConfig {
+            base_url: "https://www.googleapis.com/calendar/v3".to_string(),
+            headers: HashMap::new(),
+            env_api_key: None,
+            calendars_to_ignore: vec!["ignore_this_calendar_id_or_summary".to_string()],
+            calendar_cache_ttl_seconds: default_cache_ttl_seconds(),
+            env_oauth_client_id: Some("GOOGLE_CALENDAR_CLIENT_ID".to_string()),
+            env_oauth_client_secret: Some("GOOGLE_CALENDAR_CLIENT_SECRET".to_string()),
+            oauth_redirect_port: 0,
+            token_cache_filename: Some("google_calendar_tokens.json".to_string()),
         },
     );
 
@@ -92,6 +122,25 @@ mod tests {
         assert_eq!(config.provider, "morgen");
         assert!(config.providers.contains_key("morgen"));
         assert_eq!(config.config_version, CURRENT_CONFIG_VERSION);
+    }
+
+    #[test]
+    fn default_config_has_google_calendar_provider() {
+        let config = default_config();
+        let gc = config
+            .providers
+            .get("google_calendar")
+            .expect("google_calendar provider should be configured");
+        assert_eq!(gc.base_url, "https://www.googleapis.com/calendar/v3");
+        assert_eq!(
+            gc.env_oauth_client_id.as_deref(),
+            Some("GOOGLE_CALENDAR_CLIENT_ID")
+        );
+        assert_eq!(
+            gc.env_oauth_client_secret.as_deref(),
+            Some("GOOGLE_CALENDAR_CLIENT_SECRET")
+        );
+        assert!(gc.env_api_key.is_none());
     }
 
     #[test]

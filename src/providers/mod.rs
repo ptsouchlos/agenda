@@ -4,8 +4,10 @@ use chrono::NaiveDate;
 use crate::config::Config;
 use crate::models::CalendarEvent;
 
+pub mod google_calendar;
 mod morgen;
 
+pub use google_calendar::GoogleCalendarProvider;
 pub use morgen::MorgenProvider;
 
 pub trait CalendarProvider: Send {
@@ -21,6 +23,7 @@ pub fn create_provider(name: &str, config: &Config) -> Result<Box<dyn CalendarPr
 
     match name {
         "morgen" => Ok(Box::new(MorgenProvider::new(provider_config)?)),
+        "google_calendar" => Ok(Box::new(GoogleCalendarProvider::new(provider_config)?)),
         _ => Err(anyhow::anyhow!("unsupported provider: {}", name)),
     }
 }

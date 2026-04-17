@@ -59,6 +59,11 @@ enum Commands {
     Init,
     #[command(about = "Print version and build information")]
     Version,
+    #[command(about = "Run the OAuth authentication flow for a provider")]
+    Auth {
+        #[arg(help = "Provider name (defaults to the provider from config)")]
+        provider: Option<String>,
+    },
 }
 
 fn parse_date(s: &str) -> Result<NaiveDate, String> {
@@ -75,10 +80,16 @@ fn run() -> Result<()> {
             let path = default_config_path();
             write_config(&cfg, &path)?;
             println!("Created default configuration at: {}", path.display());
-            println!(
-                "Please set your API key in the {} environment variable.",
-                cfg.providers[&cfg.provider].env_api_key
-            );
+            if let Some(env_var) = cfg
+                .providers
+                .get(&cfg.provider)
+                .and_then(|p| p.env_api_key.as_deref())
+            {
+                println!(
+                    "Please set your API key in the {} environment variable.",
+                    env_var
+                );
+            }
             return Ok(());
         }
         Some(Commands::Version) => {
@@ -88,6 +99,25 @@ fn run() -> Result<()> {
             println!("build time: {}", build::BUILD_TIME);
             println!("rust:       {}", build::RUST_VERSION);
             println!("profile:    {}", build::BUILD_RUST_CHANNEL);
+            return Ok(());
+        }
+        Some(Commands::Auth { provider }) => {
+            let config_path = cli.config.clone().unwrap_or_else(default_config_path);
+            let cfg = read_config(&config_path)
+                .with_context(|| format!("failed to load config from {}", config_path.display()))?;
+            let name = provider.clone().unwrap_or_else(|| cfg.provider.clone());
+            let provider_config = cfg
+                .providers
+                .get(&name)
+                .ok_or_else(|| anyhow::anyhow!("provider '{}' not found in configuration", name))?;
+            match name.as_str() {
+                "google_calendar" => {
+                    providers::google_calendar::authenticate(provider_config)?;
+                }
+                other => {
+                    anyhow::bail!("provider '{}' does not support interactive auth", other);
+                }
+            }
             return Ok(());
         }
         None => {}
